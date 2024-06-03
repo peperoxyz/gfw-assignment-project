@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -22,20 +23,22 @@ const (
 )
 
 func dbConn() (*sql.DB, error) {
-	mySqlInfo := fmt.Sprintf("%s:%s@/%s", user, password, dbName)
-	db, err := sql.Open("mysql", mySqlInfo)
-	if err != nil {
-		return nil, fmt.Errorf("error opening database: %v", err)
-	}
+    dbURL := os.Getenv("DATABASE_URL")
+    if dbURL == "" {
+        dbURL = fmt.Sprintf("%s:%s@/%s", os.Getenv("user"), os.Getenv("password"), os.Getenv("dbName"))
+    }
+    db, err := sql.Open("mysql", dbURL)
+    if err != nil {
+        return nil, fmt.Errorf("error opening database: %v", err)
+    }
 
-	// ping to the database
-	err = db.Ping()
-	if err != nil {
-		return nil, fmt.Errorf("error pinging database: %v", err)
-	}
+    err = db.Ping()
+    if err != nil {
+        return nil, fmt.Errorf("error pinging database: %v", err)
+    }
 
-	fmt.Println("Successfully connected to the database")
-	return db, nil
+    fmt.Println("Successfully connected to the database")
+    return db, nil
 }
 
 // Order struct
