@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -16,18 +17,34 @@ var (
 	err error
 )
 
-const (
-	user     = "root"
-	password = ""
-	dbName   = "order_assignment"
-)
+// const (
+// 	user     = "root"
+// 	password = ""
+// 	dbName   = "order_assignment"
+// )
 
 func dbConn() (*sql.DB, error) {
     dbURL := os.Getenv("DATABASE_URL")
     if dbURL == "" {
-        dbURL = fmt.Sprintf("%s:%s@/%s", os.Getenv("user"), os.Getenv("password"), os.Getenv("dbName"))
+        return nil, fmt.Errorf("DATABASE_URL environment variable is not set")
     }
-    db, err := sql.Open("mysql", dbURL)
+
+    log.Printf("DATABASE_URL: %s", dbURL) // Log the DATABASE_URL
+
+    u, err := url.Parse(dbURL)
+    if err != nil {
+        return nil, fmt.Errorf("error parsing DATABASE_URL: %v", err)
+    }
+
+    user := u.User.Username()
+    password, _ := u.User.Password()
+    host := u.Hostname()
+    port := u.Port()
+    dbName := u.Path[1:] // Remove leading slash
+
+    dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, password, host, port, dbName)
+
+    db, err := sql.Open("mysql", dsn)
     if err != nil {
         return nil, fmt.Errorf("error opening database: %v", err)
     }
